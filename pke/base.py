@@ -23,7 +23,7 @@ from builtins import str
 
 ISO_to_language = {'en': 'english', 'pt': 'portuguese', 'fr': 'french',
                    'es': 'spanish', 'it': 'italian', 'nl': 'dutch',
-                   'de': 'german'}
+                   'de': 'german', 'th': 'thailand'}
 
 escaped_punctuation = {'-lrb-': '(', '-rrb-': ')', '-lsb-': '[', '-rsb-': ']',
                        '-lcb-': '{', '-rcb-': '}'}
@@ -135,7 +135,11 @@ class LoadFile(object):
         self.sentences = doc.sentences
 
         # initialize the stoplist
-        self.stoplist = stopwords.words(ISO_to_language[self.language])
+        if self.language == 'th':
+            self.stoplist = []
+        else:
+            self.stoplist = stopwords.words(ISO_to_language[self.language])
+        
 
         # word normalization
         self.normalization = kwargs.get('normalization', 'stemming')
@@ -260,7 +264,8 @@ class LoadFile(object):
 
         # replace with surface forms if no stemming
         if not stemming:
-            n_best = [(' '.join(self.candidates[u].surface_forms[0]).lower(),
+            # TODO: separate by language
+            n_best = [(''.join(self.candidates[u].surface_forms[0]).lower(),
                        self.weights[u]) for u in best[:min(n, len(best))]]
 
         if len(n_best) < n:
@@ -471,7 +476,6 @@ class LoadFile(object):
 
         if pos_blacklist is None:
             pos_blacklist = []
-
         # loop through the candidates
         for k in list(self.candidates):
 

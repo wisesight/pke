@@ -6,8 +6,10 @@
 import xml.etree.ElementTree as etree
 import spacy
 
+from wstext.tokenizer import tokenize
+from wstext.preprocess import preprocess
+from pythainlp.tag import pos_tag
 from pke.data_structures import Document
-
 
 class Reader(object):
     def read(self, path):
@@ -99,33 +101,48 @@ class RawTextReader(Reader):
         """
 
         spacy_model = kwargs.get('spacy_model', None)
-
-        if spacy_model is not None:
-            spacy_model = fix_spacy_for_french(spacy_model)
-            spacy_doc = spacy_model(text)
-        else:
-            max_length = kwargs.get('max_length', 10**6)
-            nlp = spacy.load(self.language,
-                             max_length=max_length,
-                             disable=['ner', 'textcat', 'parser'])
-            nlp.add_pipe(nlp.create_pipe('sentencizer'))
-            nlp = fix_spacy_for_french(nlp)
-            spacy_doc = nlp(text)
-
-        sentences = []
-        for sentence_id, sentence in enumerate(spacy_doc.sents):
+        if self.language == 'th':
+            sentences = []
+            text = preprocess(text)
+            tokens = tokenize(text, engine='deepcut', remove_whitespace=True)
+            tokens = [token for token in tokens if not token.startswith('WS')]
+            pos = pos_tag(tokens, corpus='orchid_ud')
             sentences.append({
-                "words": [token.text for token in sentence],
-                "lemmas": [token.lemma_ for token in sentence],
-                # FIX : This is a fallback if `fix_spacy_for_french` does not work
-                "POS": [token.pos_ or token.tag_ for token in sentence],
-                "char_offsets": [(token.idx, token.idx + len(token.text))
-                                     for token in sentence]
+                "words": tokens,
+                "lemmas": tokens,
+                "POS": [_pos[1] for _pos in pos]
             })
+            doc = Document.from_sentences(sentences,
+                                        input_file=kwargs.get('input_file', None),
+                                        **kwargs)
+            return doc
+        else: 
+            if spacy_model is not None:
+                spacy_model = fix_spacy_for_french(spacy_model)
+                spacy_doc = spacy_model(text)
+            else:
+                max_length = kwargs.get('max_length', 10**6)
+                nlp = spacy.load(self.language,
+                                max_length=max_length,
+                                disable=['ner', 'textcat', 'parser'])
+                nlp.add_pipe(nlp.create_pipe('sentencizer'))
+                nlp = fix_spacy_for_french(nlp)
+                spacy_doc = nlp(text)
 
-        doc = Document.from_sentences(sentences,
-                                      input_file=kwargs.get('input_file', None),
-                                      **kwargs)
+            sentences = []
+            for sentence_id, sentence in enumerate(spacy_doc.sents):
+                sentences.append({
+                    "words": [token.text for token in sentence],
+                    "lemmas": [token.lemma_ for token in sentence],
+                    # FIX : This is a fallback if `fix_spacy_for_french` does not work
+                    "POS": [token.pos_ or token.tag_ for token in sentence],
+                    "char_offsets": [(token.idx, token.idx + len(token.text))
+                                        for token in sentence]
+                })
 
-        return doc
+            doc = Document.from_sentences(sentences,
+                                        input_file=kwargs.get('input_file', None),
+                                        **kwargs)
+
+            return doc
 

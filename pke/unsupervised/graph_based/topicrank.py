@@ -97,9 +97,10 @@ class TopicRank(LoadFile):
             stoplist = self.stoplist
 
         # filter candidates containing stopwords or punctuation marks
-        self.candidate_filtering(stoplist=list(string.punctuation) +
-                                          ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-', '-rsb-'] +
-                                          stoplist)
+        if self.language != 'th':
+            self.candidate_filtering(stoplist=list(string.punctuation) +
+                                            ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-', '-rsb-'] +
+                                            stoplist)
 
     def vectorize_candidates(self):
         """Vectorize the keyphrase candidates.
