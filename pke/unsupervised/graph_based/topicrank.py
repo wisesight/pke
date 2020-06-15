@@ -23,7 +23,7 @@ import networkx as nx
 import numpy as np
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import pdist
-
+from wstext.data import THAI_STOPWORDS
 from pke.base import LoadFile
 
 
@@ -101,6 +101,8 @@ class TopicRank(LoadFile):
             self.candidate_filtering(stoplist=list(string.punctuation) +
                                             ['-lrb-', '-rrb-', '-lcb-', '-rcb-', '-lsb-', '-rsb-'] +
                                             stoplist)
+        else:
+            self.candidate_filtering(stoplist=list(THAI_STOPWORDS), minimum_length=0, minimum_word_size=0, maximum_word_number=100, only_alphanum=False)
 
     def vectorize_candidates(self):
         """Vectorize the keyphrase candidates.
